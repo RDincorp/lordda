@@ -7,7 +7,6 @@ class Game {
         this.renderer = new GameRenderer('gameCanvas');
         this.player = new Player(200, 300); // Спавн у Плебании
 
-        // Создаем NPC
         this.npcs = [
             new NPC({
                 id: "pan_janusz",
@@ -15,10 +14,9 @@ class Game {
                 title: "Шляхтич и меценат",
                 portrait: "👑",
                 x: 1350, y: 390,
-                color: "#8b261d",
                 schedule: [
-                    { startHour: 8, endHour: 18, targetX: 1350, targetY: 390 }, // В усадьбе
-                    { startHour: 18, endHour: 22, targetX: 880, targetY: 660 }   // В корчме
+                    { startHour: 8, endHour: 18, targetX: 1350, targetY: 390 },
+                    { startHour: 18, endHour: 22, targetX: 880, targetY: 660 }
                 ]
             }),
             new NPC({
@@ -26,35 +24,29 @@ class Game {
                 name: "Янкель-шинкарь",
                 title: "Владелец корчмы",
                 portrait: "🧔",
-                x: 870, y: 640,
-                color: "#2e5436"
+                x: 870, y: 640
             }),
             new NPC({
                 id: "cossack_grom",
                 name: "Атаман Гром",
                 title: "Казачий атаман",
                 portrait: "⚔️",
-                x: 1120, y: 920,
-                color: "#2a3d66"
+                x: 1120, y: 920
             }),
             new NPC({
                 id: "hanna",
                 name: "Ганна",
                 title: "Крестьянка",
                 portrait: "👵",
-                x: 480, y: 390,
-                color: "#6b593f"
+                x: 480, y: 390
             })
         ];
 
         this.questEngine = new QuestEngine();
         this.reputation = { ...CONFIG.INITIAL_REPUTATION };
 
-        // Состояние ввода
         this.keys = {};
         this.lastTime = performance.now();
-
-        // Текущий подсвеченный объект для взаимодействия
         this.currentInteractable = null;
 
         this.initInput();
@@ -63,25 +55,24 @@ class Game {
 
         this.addNotification("Добро пожаловать в Покровскую Весь, отец Стефан!");
 
-        // Запуск игрового цикла
         requestAnimationFrame((time) => this.gameLoop(time));
     }
 
-    // ИНИЦИАЛИЗА ВВОДА КЛАВИАТУРЫ
     initInput() {
+        // Захват клавиатуры
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
+            this.keys[e.key] = true; // Для поддержки любой языковой раскладки
 
-            // Горячие клавиши UI
-            if (e.code === 'KeyE' || e.code === 'Space') {
+            if (e.code === 'KeyE' || e.code === 'Space' || e.key === 'e' || e.key === 'E' || e.key === 'у' || e.key === 'У') {
                 this.handleInteraction();
-            } else if (e.code === 'KeyJ') {
+            } else if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'о') {
                 this.toggleModal('journalModal');
                 this.renderJournal();
-            } else if (e.code === 'KeyI') {
+            } else if (e.code === 'KeyI' || e.key === 'i' || e.key === 'ш') {
                 this.toggleModal('inventoryModal');
                 this.renderInventory();
-            } else if (e.code === 'KeyM') {
+            } else if (e.code === 'KeyM' || e.key === 'm' || e.key === 'ь') {
                 this.toggleModal('registerModal');
                 this.renderRegister();
             } else if (e.code === 'Escape') {
@@ -91,10 +82,20 @@ class Game {
 
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
+            this.keys[e.key] = false;
+        });
+
+        // ДВИЖЕНИЕ ПО КЛИКУ МЫШИ НА ХОЛСТЕ
+        const canvas = document.getElementById('gameCanvas');
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left + this.renderer.camera.x;
+            const mouseY = e.clientY - rect.top + this.renderer.camera.y;
+
+            this.player.setTarget(mouseX, mouseY);
         });
     }
 
-    // ИНИЦИАЛИЗА КНОПОК UI
     initUI() {
         document.getElementById('speedToggleBtn')?.addEventListener('click', () => {
             const spd = timeManager.toggleSpeed();
@@ -125,46 +126,35 @@ class Game {
             document.getElementById('audioToggleBtn').innerText = isMuted ? "🔇" : "🔊";
         });
 
-        // Кнопки закрытия модальных окон
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', () => this.closeAllModals());
         });
     }
 
-    // ГЛАВНЫЙ ИГРОВОЙ ЦИКЛ (GAME LOOP)
     gameLoop(currentTime) {
         const deltaTime = Math.min((currentTime - this.lastTime) / 1000, 0.1);
         this.lastTime = currentTime;
 
-        // 1. Обновление времени
         timeManager.update(deltaTime);
 
-        // 2. Обновление игрока и NPC
         this.player.update(deltaTime, this.keys);
         for (let npc of this.npcs) {
             npc.update(deltaTime, timeManager.gameHours);
         }
 
-        // 3. Обновление камеры
         this.renderer.updateCamera(this.player);
-
-        // 4. Проверка объектов рядом с игроком
         this.checkNearbyInteractions();
-
-        // 5. Рендеринг кадра
         this.renderer.render(this.player, this.npcs);
 
         requestAnimationFrame((time) => this.gameLoop(time));
     }
 
-    // ПРОВЕРКА БЛИЖАЙШИХ ОБЪЕКТОВ / NPC ДЛЯ ВЗАИМОДЕЙСТВИЯ
     checkNearbyInteractions() {
         const promptEl = document.getElementById('interactionPrompt');
         const textEl = document.getElementById('interactionText');
 
-        // Проверка NPC
         let nearestNPC = null;
-        let minDist = 65;
+        let minDist = 70;
 
         for (let npc of this.npcs) {
             const dist = Math.hypot(npc.x - this.player.x, npc.y - this.player.y);
@@ -181,7 +171,6 @@ class Game {
             return;
         }
 
-        // Проверка объектов мира
         const nearestObj = gameWorld.getNearestInteractable(this.player.x, this.player.y);
         if (nearestObj) {
             this.currentInteractable = { type: 'object', data: nearestObj };
@@ -194,7 +183,6 @@ class Game {
         promptEl.classList.add('hidden');
     }
 
-    // НАЖАТИЕ КЛАВИШИ ВЗАИМОДЕЙСТВИЯ (E)
     handleInteraction() {
         if (!this.currentInteractable) return;
 
@@ -207,7 +195,6 @@ class Game {
         } else if (this.currentInteractable.type === 'object') {
             const obj = this.currentInteractable.data;
 
-            // Обработка особых объектов
             if (obj.id === "desk_parsonage") {
                 this.toggleModal('registerModal');
                 this.renderRegister();
@@ -224,7 +211,6 @@ class Game {
         }
     }
 
-    // ОТКРЫТИЕ ДИАЛОГА
     openDialogue(dialogueData) {
         document.getElementById('npcPortrait').innerText = dialogueData.portrait;
         document.getElementById('npcName').innerText = dialogueData.npcName;
@@ -254,14 +240,12 @@ class Game {
         document.getElementById('dialogueModal').classList.add('hidden');
     }
 
-    // ИНСПЕКТИРОВАНИЕ ОБЪЕКТА
     openInspect(title, bodyText) {
         document.getElementById('inspectTitle').innerText = title;
         document.getElementById('inspectBody').innerText = bodyText;
         document.getElementById('inspectModal').classList.remove('hidden');
     }
 
-    // УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ
     toggleModal(modalId) {
         audioEngine.playPageTurn();
         const el = document.getElementById(modalId);
@@ -277,7 +261,6 @@ class Game {
         document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
     }
 
-    // РЕНДЕР КВЕСТОВ
     renderJournal() {
         const listEl = document.getElementById('questList');
         const detailsEl = document.getElementById('questDetails');
@@ -301,7 +284,6 @@ class Game {
         });
     }
 
-    // РЕНДЕР ИНВЕНТАРЯ
     renderInventory() {
         const gridEl = document.getElementById('inventoryGrid');
         const descEl = document.getElementById('itemDescription');
@@ -318,7 +300,6 @@ class Game {
         });
     }
 
-    // РЕНДЕР МЕТРИК
     renderRegister() {
         const bodyEl = document.getElementById('registerTableBody');
         bodyEl.innerHTML = '';
@@ -336,7 +317,6 @@ class Game {
         });
     }
 
-    // УВЕДОМЛЕНИЯ
     addNotification(text) {
         const area = document.getElementById('notificationArea');
         const notice = document.createElement('div');
@@ -347,7 +327,6 @@ class Game {
         setTimeout(() => notice.remove(), 4000);
     }
 
-    // ОБНОВЛЕНИЕ РЕПУТАЦИИ
     addReputation(delta) {
         for (let k in delta) {
             if (this.reputation[k] !== undefined) {
@@ -365,7 +344,6 @@ class Game {
     }
 }
 
-// Запуск игры при загрузке страницы
 window.addEventListener('load', () => {
     window.mainGame = new Game();
 });
