@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Уния: Симулятор Униатского Священника (XVII век)</title>
+    <meta name="description" content="2D RPG симулятор униатского священника в пограничье Речи Посполитой XVII века.">
+    
+    <!-- Google Fonts for historical typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Игровой холст -->
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Атмосферный интерфейс поверх холста -->
+        <div id="ui-overlay">
+            
+            <!-- ВЕРХНИЙ БАР: Время и репутация -->
+            <header class="hud-header">
+                <div class="time-widget" id="timeWidget">
+                    <div class="sun-moon-dial" id="sunMoonDial">
+                        <div class="celestial-body" id="celestialBody"></div>
+                    </div>
+                    <div class="time-details">
+                        <div class="time-clock" id="clockDisplay">06:00</div>
+                        <div class="time-phase" id="phaseDisplay">Утренняя заря</div>
+                        <div class="time-day" id="dayDisplay">День 1 • Покровская Весь</div>
+                    </div>
+                    <button class="time-speed-btn" id="speedToggleBtn" title="Переключить скорость времени (Для тестов)">1x ⏱️</button>
+                </div>
+
+                <div class="reputation-bar">
+                    <div class="rep-item" title="Репутация у местной Шляхты">
+                        <span class="rep-icon">⚜️</span>
+                        <span class="rep-name">Шляхта:</span>
+                        <span class="rep-value" id="repSzlachta">50</span>
+                    </div>
+                    <div class="rep-item" title="Репутация у Крестьян">
+                        <span class="rep-icon">🌾</span>
+                        <span class="rep-name">Крестьяне:</span>
+                        <span class="rep-value" id="repPeasants">50</span>
+                    </div>
+                    <div class="rep-item" title="Репутация у Католического епископата">
+                        <span class="rep-icon">🇻🇦</span>
+                        <span class="rep-name">Рим:</span>
+                        <span class="rep-value" id="repChurch">50</span>
+                    </div>
+                    <div class="rep-item" title="Репутация у Казаков и Православных">
+                        <span class="rep-icon">⚔️</span>
+                        <span class="rep-name">Казаки:</span>
+                        <span class="rep-value" id="repCossacks">50</span>
+                    </div>
+                </div>
+
+                <div class="hud-actions">
+                    <button class="hud-btn" id="journalBtn" title="Журнал квестов (J)">📜 Квесты</button>
+                    <button class="hud-btn" id="inventoryBtn" title="Инвентарь (I)">🎒 Сума</button>
+                    <button class="hud-btn" id="registerBtn" title="Метрическая книга (M)">📖 Метрики</button>
+                    <button class="hud-btn" id="audioToggleBtn" title="Включить/Выключить звук">🔊</button>
+                    <button class="hud-btn" id="helpBtn" title="Управление и справка">❓</button>
+                </div>
+            </header>
+
+            <!-- НИЖНИЙ БАР: Подсказки взаимодействия -->
+            <div id="interactionPrompt" class="interaction-prompt hidden">
+                <span class="key-badge">E</span>
+                <span id="interactionText">Поговорить с паном Янушем</span>
+            </div>
+
+            <!-- УВЕДОМЛЕНИЯ КВЕСТОВ И СОБЫТИЙ -->
+            <div id="notificationArea" class="notification-area"></div>
+
+            <!-- ДИАЛОГОВОЕ ОКНО С NPC -->
+            <div id="dialogueModal" class="modal dialogue-modal hidden">
+                <div class="dialogue-box">
+                    <div class="portrait-frame">
+                        <div class="portrait-avatar" id="npcPortrait">👤</div>
+                    </div>
+                    <div class="dialogue-content">
+                        <div class="dialogue-header">
+                            <h3 id="npcName">Пан Януш Острожский</h3>
+                            <span class="npc-title" id="npcTitle">Местный шляхтич и меценат</span>
+                        </div>
+                        <div class="dialogue-text" id="dialogueText">
+                            «Добро пожаловать в плебанию, отец Стефан. Как поживает наш святой храм?»
+                        </div>
+                        <div class="dialogue-choices" id="dialogueChoices">
+                            <!-- Варианты ответов добавляются через JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО ИНСПЕКТИРОВАНИЯ / ОБЗОР ОБЪЕКТА -->
+            <div id="inspectModal" class="modal inspect-modal hidden">
+                <div class="parchment-window">
+                    <button class="close-btn" id="closeInspectBtn">&times;</button>
+                    <h2 id="inspectTitle">Алтарный Иконостас</h2>
+                    <div class="inspect-body" id="inspectBody">
+                        Деревянный иконостас с образами Спасителя и Богородицы. Святые свечи тихо мерцают в полумраке церкви.
+                    </div>
+                    <div class="inspect-actions" id="inspectActions"></div>
+                </div>
+            </div>
+
+            <!-- ОКНО КВЕСТОВ -->
+            <div id="journalModal" class="modal parchment-modal hidden">
+                <div class="parchment-window">
+                    <button class="close-btn" id="closeJournalBtn">&times;</button>
+                    <h2>📜 Дневник Отца Стефана</h2>
+                    <div class="journal-container">
+                        <div class="quest-list" id="questList"></div>
+                        <div class="quest-details" id="questDetails">
+                            <p class="empty-notice">Выберите задание из списка слева</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО ИНВЕНТАРЯ -->
+            <div id="inventoryModal" class="modal parchment-modal hidden">
+                <div class="parchment-window">
+                    <button class="close-btn" id="closeInventoryBtn">&times;</button>
+                    <h2>🎒 Священническая Сума</h2>
+                    <div class="inventory-grid" id="inventoryGrid"></div>
+                    <div class="item-description" id="itemDescription">
+                        <p class="empty-notice">Наведите или нажмите на предмет, чтобы узнать его историю</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО МЕТРИЧЕСКОЙ КНИГИ -->
+            <div id="registerModal" class="modal parchment-modal hidden">
+                <div class="parchment-window">
+                    <button class="close-btn" id="closeRegisterBtn">&times;</button>
+                    <h2>📖 Метрическая Книга Покровского Прихода</h2>
+                    <div class="register-content" id="registerContent">
+                        <div class="register-section">
+                            <h3>Записи о прихожанах и духовных требах</h3>
+                            <table class="register-table">
+                                <thead>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Имя</th>
+                                        <th>Сословие</th>
+                                        <th>Событие / Обряд</th>
+                                        <th>Заметка священника</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registerTableBody">
+                                    <!-- Записи добавляются динамически -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ОКНО СПРАВКИ -->
+            <div id="helpModal" class="modal parchment-modal hidden">
+                <div class="parchment-window">
+                    <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    <h2>⛪ Справка и Управление</h2>
+                    <div class="help-content">
+                        <h3>Управление:</h3>
+                        <ul>
+                            <li><kbd>WASD</kbd> / <kbd>Стрелки</kbd> или <kbd>ЛКМ</kbd> — Перемещение священника</li>
+                            <li><kbd>E</kbd> или <kbd>Пробел</kbd> — Взаимодействие с объектами и разговоры с людьми</li>
+                            <li><kbd>J</kbd> — Открыть Дневник квестов</li>
+                            <li><kbd>I</kbd> — Открыть Инвентарь</li>
+                            <li><kbd>M</kbd> — Открыть Метрическую книгу прихода</li>
+                            <li><kbd>Esc</kbd> — Закрыть активное окно</li>
+                        </ul>
+                        <h3>Суточный цикл:</h3>
+                        <p>1 игровые сутки длятся <strong>24 реальные минуты</strong>. Наблюдайте за перемещением солнца и луны. С наступлением сумерек зажигаются огни в окнах и храме, а прихожане расходятся по домам или в корчму.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Игровые скрипты -->
+    <script src="js/config.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/timeManager.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/quests.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>

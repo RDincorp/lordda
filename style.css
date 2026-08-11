@@ -1,0 +1,558 @@
+/* ==========================================================================
+   УНИЯ: СИМУЛЯТОР УНИАТСКОГО СВЯЩЕННИКА (XVII ВЕК) — СТИЛИ И ИНТЕРФЕЙС
+   ========================================================================== */
+
+:root {
+    --gold-primary: #d4af37;
+    --gold-bright: #ffd700;
+    --gold-dark: #8b7500;
+    --parchment-bg: #f4e8c1;
+    --parchment-dark: #3a2e1d;
+    --parchment-border: #6b5333;
+    --text-dark: #2b1f13;
+    --text-gold: #f9e29c;
+    --bg-overlay: rgba(18, 12, 8, 0.85);
+    --shadow-gold: 0 0 15px rgba(212, 175, 55, 0.4);
+    
+    --font-heading: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Cormorant Garamond', Georgia, serif;
+    --font-title: 'UnifrakturMaguntia', 'Cinzel', cursive, serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0d0805;
+    font-family: var(--font-body);
+    color: var(--text-dark);
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #050302;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* ==========================================================================
+   UI OVERLAY
+   ========================================================================== */
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Пропускаем клики на canvas */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 15px;
+    z-index: 10;
+}
+
+#ui-overlay * {
+    pointer-events: auto; /* Включаем клики для интерактивных элементов UI */
+}
+
+/* ВЕРХНИЙ БАР (HUD) */
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: linear-gradient(180deg, rgba(20, 14, 8, 0.92) 0%, rgba(20, 14, 8, 0.65) 100%);
+    border: 2px solid var(--parchment-border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(212, 175, 55, 0.15);
+    backdrop-filter: blur(8px);
+}
+
+/* Виджет времени */
+.time-widget {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(43, 31, 19, 0.7);
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--gold-dark);
+}
+
+.sun-moon-dial {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid var(--gold-primary);
+    background: radial-gradient(circle, #2d4561 0%, #0a111a 100%);
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.celestial-body {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    top: 10px;
+    left: 10px;
+    background: #ffd700;
+    box-shadow: 0 0 12px #ffe600;
+    transition: transform 0.5s ease;
+}
+
+.time-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.time-clock {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold-bright);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.time-phase {
+    font-size: 0.85rem;
+    color: #e2d2b4;
+    font-style: italic;
+}
+
+.time-day {
+    font-size: 0.75rem;
+    color: #a89478;
+}
+
+.time-speed-btn {
+    background: #3e2e1c;
+    border: 1px solid var(--gold-primary);
+    color: var(--gold-bright);
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-speed-btn:hover {
+    background: var(--gold-dark);
+    color: #ffffff;
+}
+
+/* Репутация */
+.reputation-bar {
+    display: flex;
+    gap: 15px;
+    background: rgba(30, 20, 12, 0.6);
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.rep-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    color: #ebdcb9;
+}
+
+.rep-icon {
+    font-size: 1.1rem;
+}
+
+.rep-name {
+    color: #b59f78;
+    font-size: 0.85rem;
+}
+
+.rep-value {
+    font-weight: bold;
+    color: var(--gold-bright);
+}
+
+/* Кнопки HUD */
+.hud-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.hud-btn {
+    background: linear-gradient(180deg, #4a3823 0%, #291d12 100%);
+    border: 1px solid var(--gold-primary);
+    color: var(--text-gold);
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: all 0.2s ease;
+}
+
+.hud-btn:hover {
+    background: linear-gradient(180deg, #6e4e2c 0%, #3d2716 100%);
+    border-color: var(--gold-bright);
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   ПОДСКАЗКА ВЗАИМОДЕЙСТВИЯ (INTERACTION PROMPT)
+   ========================================================================== */
+
+.interaction-prompt {
+    align-self: center;
+    margin-bottom: 25px;
+    background: linear-gradient(180deg, rgba(30, 20, 12, 0.95) 0%, rgba(15, 10, 5, 0.95) 100%);
+    border: 2px solid var(--gold-primary);
+    border-radius: 30px;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--gold-bright);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.8), var(--shadow-gold);
+    animation: pulsePrompt 2s infinite ease-in-out;
+}
+
+@keyframes pulsePrompt {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+
+.key-badge {
+    background: var(--gold-primary);
+    color: #1a1008;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 5px rgba(255,255,255,0.5);
+    font-size: 1rem;
+}
+
+/* ==========================================================================
+   МОДАЛЬНЫЕ ОКНА И ДИАЛОГИ
+   ========================================================================== */
+
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-overlay);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    backdrop-filter: blur(5px);
+    transition: opacity 0.3s ease;
+}
+
+.hidden {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Пергаментное окно */
+.parchment-window {
+    position: relative;
+    width: 85%;
+    max-width: 850px;
+    max-height: 85vh;
+    background: var(--parchment-bg);
+    background-image: radial-gradient(circle, #f9f0d3 0%, #e6d3a3 100%);
+    border: 8px double var(--parchment-border);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9), inset 0 0 50px rgba(107, 83, 51, 0.3);
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.parchment-window h2 {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    color: #4a3319;
+    border-bottom: 2px solid var(--parchment-border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: var(--parchment-border);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #900;
+}
+
+/* ДИАЛОГОВОЕ ОКНО */
+.dialogue-modal {
+    align-items: flex-end;
+    padding-bottom: 30px;
+    background: linear-gradient(180deg, transparent 40%, rgba(10, 6, 3, 0.95) 100%);
+}
+
+.dialogue-box {
+    width: 90%;
+    max-width: 950px;
+    background: linear-gradient(180deg, rgba(38, 25, 14, 0.95) 0%, rgba(20, 13, 7, 0.98) 100%);
+    border: 3px solid var(--gold-primary);
+    border-radius: 12px;
+    padding: 20px 25px;
+    display: flex;
+    gap: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(212, 175, 55, 0.2);
+}
+
+.portrait-frame {
+    width: 110px;
+    height: 110px;
+    border: 3px solid var(--gold-primary);
+    border-radius: 10px;
+    background: #181009;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    flex-shrink: 0;
+}
+
+.portrait-avatar {
+    font-size: 3.5rem;
+}
+
+.dialogue-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.dialogue-header h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    color: var(--gold-bright);
+}
+
+.npc-title {
+    font-size: 0.9rem;
+    color: #bfae8f;
+    font-style: italic;
+}
+
+.dialogue-text {
+    font-size: 1.25rem;
+    color: #f2e4cf;
+    line-height: 1.5;
+    margin: 12px 0 18px 0;
+    min-height: 50px;
+}
+
+.dialogue-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.choice-btn {
+    background: linear-gradient(90deg, rgba(66, 45, 25, 0.8) 0%, rgba(40, 27, 15, 0.8) 100%);
+    border: 1px solid var(--gold-dark);
+    color: #f7e6c4;
+    padding: 10px 15px;
+    border-radius: 6px;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.choice-btn:hover {
+    background: linear-gradient(90deg, var(--gold-dark) 0%, #4a3416 100%);
+    border-color: var(--gold-bright);
+    color: #ffffff;
+    padding-left: 20px;
+}
+
+/* КВЕСТЫ */
+.journal-container {
+    display: flex;
+    gap: 20px;
+    min-height: 350px;
+}
+
+.quest-list {
+    width: 35%;
+    border-right: 2px solid var(--parchment-border);
+    padding-right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quest-item-btn {
+    background: rgba(220, 200, 160, 0.4);
+    border: 1px solid var(--parchment-border);
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-heading);
+    font-weight: bold;
+    color: #3b2812;
+    transition: all 0.2s;
+}
+
+.quest-item-btn:hover, .quest-item-btn.active {
+    background: var(--parchment-border);
+    color: var(--parchment-bg);
+}
+
+.quest-details {
+    width: 65%;
+    padding-left: 10px;
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+
+/* ИНВЕНТАРЬ */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.inv-slot {
+    width: 80px;
+    height: 80px;
+    background: rgba(210, 185, 140, 0.4);
+    border: 2px solid var(--parchment-border);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.inv-slot:hover {
+    transform: scale(1.08);
+    border-color: var(--gold-dark);
+}
+
+.item-description {
+    background: rgba(255, 248, 225, 0.6);
+    border: 1px solid var(--parchment-border);
+    padding: 15px;
+    border-radius: 8px;
+    min-height: 80px;
+    font-size: 1.1rem;
+}
+
+/* МЕТРИКИ */
+.register-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.register-table th, .register-table td {
+    border: 1px solid var(--parchment-border);
+    padding: 10px;
+    text-align: left;
+}
+
+.register-table th {
+    background: var(--parchment-border);
+    color: var(--parchment-bg);
+    font-family: var(--font-heading);
+}
+
+/* УВЕДОМЛЕНИЯ */
+.notification-area {
+    position: absolute;
+    top: 90px;
+    right: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
+}
+
+.toast-notice {
+    background: rgba(30, 20, 10, 0.92);
+    border: 2px solid var(--gold-primary);
+    color: var(--gold-bright);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: var(--font-heading);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    animation: slideInToast 0.4s ease, fadeOutToast 0.5s ease 3.5s forwards;
+}
+
+@keyframes slideInToast {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOutToast {
+    from { opacity: 1; }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Справка */
+kbd {
+    background: #4a3823;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
