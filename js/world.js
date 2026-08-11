@@ -125,8 +125,7 @@ class GameWorld {
 
     generateEnvironment() {
         // Генерируем деревья вокруг леса и реку
-        for (let i = 0; y = 0; i < 40) {
-            // Опушка леса справа
+        for (let i = 0; i < 40; i++) {
             this.decorations.push({
                 type: "tree",
                 x: 1300 + Math.random() * 500,
