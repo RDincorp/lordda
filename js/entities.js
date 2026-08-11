@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ENTITIES.JS — Персонажи: Главный Герой (Отец Стефан) и NPC
+   ENTITIES.JS — Персонажи в стиле Cult of the Lamb (Обводка, детали, физика)
    ========================================================================== */
 
 class Player {
@@ -7,25 +7,24 @@ class Player {
         this.x = x;
         this.y = y;
         this.radius = 16;
-        this.speed = 180; // Быстрое и отзывчивое движение
+        this.speed = 180;
         
         this.facing = "down";
         this.isMoving = false;
         this.animFrame = 0;
         this.animTimer = 0;
+        this.idleBob = 0;
     }
 
     update(deltaTime, keysInput) {
         let dx = 0;
         let dy = 0;
 
-        // ДВИЖЕНИЕ СТРОГО НА WASD И СТРЕЛКИ (А также на русскую раскладку ЦФЫВ)
         if (keysInput['KeyW'] || keysInput['ArrowUp'] || keysInput['w'] || keysInput['W'] || keysInput['ц'] || keysInput['Ц']) dy -= 1;
         if (keysInput['KeyS'] || keysInput['ArrowDown'] || keysInput['s'] || keysInput['S'] || keysInput['ы'] || keysInput['Ы']) dy += 1;
         if (keysInput['KeyA'] || keysInput['ArrowLeft'] || keysInput['a'] || keysInput['A'] || keysInput['ф'] || keysInput['Ф']) dx -= 1;
         if (keysInput['KeyD'] || keysInput['ArrowRight'] || keysInput['d'] || keysInput['D'] || keysInput['в'] || keysInput['В']) dx += 1;
 
-        // Нормализация скорости при движении по диагонали
         if (dx !== 0 && dy !== 0) {
             dx *= 0.7071;
             dy *= 0.7071;
@@ -40,14 +39,12 @@ class Player {
                 this.facing = dy > 0 ? "down" : "up";
             }
 
-            // Рассчитываем следующее положение
             const moveStepX = dx * this.speed * deltaTime;
             const moveStepY = dy * this.speed * deltaTime;
 
             const nextX = this.x + moveStepX;
             const nextY = this.y + moveStepY;
 
-            // Движение с проверкой коллизий
             if (!gameWorld.checkCollision(nextX, this.y, this.radius)) {
                 this.x = nextX;
             }
@@ -55,7 +52,6 @@ class Player {
                 this.y = nextY;
             }
 
-            // Анимация шагов
             this.animTimer += deltaTime;
             if (this.animTimer > 0.12) {
                 this.animFrame = (this.animFrame + 1) % 4;
@@ -65,98 +61,104 @@ class Player {
         } else {
             this.isMoving = false;
             this.animFrame = 0;
+            this.idleBob += deltaTime * 2;
         }
     }
 
-    // КРУПНАЯ И ЯРКАЯ ОТРИСОВКА ОЦА СТЕФАНА
+    // ВЫСОКОДЕТАЛИЗИРОВАННАЯ И ВЫРАЗИТЕЛЬНАЯ ОТРИСОВКА ОТЦА СТЕФАНА
     draw(ctx) {
         ctx.save();
         ctx.translate(Math.round(this.x), Math.round(this.y));
 
-        const legOffset = this.isMoving ? Math.sin(this.animFrame * Math.PI / 2) * 6 : 0;
+        const bob = this.isMoving ? Math.sin(this.animFrame * Math.PI / 2) * 4 : Math.sin(this.idleBob) * 1.5;
+        const legStep = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 7 : 0;
 
-        // 1. Указатель/маркер под ногами главного героя (чтобы сразу видеть, где священник!)
+        // 1. Светящийся индикатор выявления героя на карте
         ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.shadowColor = "#ffe600";
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 14;
         ctx.beginPath();
-        ctx.ellipse(0, 10, 20, 9, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 10, 22, 10, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Тень
-        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        // Падающая тень
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.beginPath();
         ctx.ellipse(0, 10, 18, 7, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // 2. Сапоги
         ctx.fillStyle = "#120a04";
-        ctx.fillRect(-10 + legOffset, 4, 8, 10);
-        ctx.fillRect(2 - legOffset, 4, 8, 10);
+        ctx.fillRect(-10 + legStep, 3, 8, 11);
+        ctx.fillRect(2 - legStep, 3, 8, 11);
 
-        // 3. Чёрная ряса с позолоченной каймой
-        ctx.fillStyle = "#1a120b";
+        // 3. Чёрная ряса священника с сочной контурной обводкой
+        ctx.fillStyle = "#1c140d";
         ctx.beginPath();
         ctx.moveTo(-16, 6);
-        ctx.lineTo(-12, -26);
-        ctx.lineTo(12, -26);
+        ctx.lineTo(-12, -26 + bob);
+        ctx.lineTo(12, -26 + bob);
         ctx.lineTo(16, 6);
         ctx.closePath();
         ctx.fill();
 
-        // Золотой подол
-        ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-16, 5);
-        ctx.lineTo(16, 5);
+        // Чёрный сочный контур
+        ctx.strokeStyle = "#080503";
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // 4. Мантия
-        ctx.fillStyle = "#2c1c11";
-        ctx.fillRect(-12, -24, 24, 18);
+        // Золотой вышитый епитрахиль
+        ctx.fillStyle = "#d4af37";
+        ctx.fillRect(-4, -22 + bob, 8, 28);
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-4, -22 + bob, 8, 28);
 
-        // 5. Лицо и пышная борода
+        // 4. Мантия
+        ctx.fillStyle = "#2b1c11";
+        ctx.fillRect(-12, -24 + bob, 24, 16);
+
+        // 5. Лицо
         ctx.fillStyle = "#f8d5ab";
         ctx.beginPath();
-        ctx.arc(0, -32, 10, 0, Math.PI * 2);
+        ctx.arc(0, -32 + bob, 10, 0, Math.PI * 2);
         ctx.fill();
 
-        // Борода
+        // Пышная каштановая борода
         ctx.fillStyle = "#36200f";
         ctx.beginPath();
-        ctx.arc(0, -28, 10, 0, Math.PI);
+        ctx.arc(0, -28 + bob, 10, 0, Math.PI);
         ctx.fill();
 
-        // Глаза
+        // Выразительные глаза
         ctx.fillStyle = "#000000";
-        if (this.facing === "down" || this.facing === "right") ctx.fillRect(3, -34, 3, 3);
-        if (this.facing === "down" || this.facing === "left") ctx.fillRect(-5, -34, 3, 3);
+        if (this.facing === "down" || this.facing === "right") ctx.fillRect(3, -34 + bob, 3, 3);
+        if (this.facing === "down" || this.facing === "left") ctx.fillRect(-5, -34 + bob, 3, 3);
 
-        // 6. Головной убор (Клобук)
+        // 6. Клобук
         ctx.fillStyle = "#120c06";
         ctx.beginPath();
-        ctx.arc(0, -38, 12, Math.PI, 0);
+        ctx.arc(0, -38 + bob, 12, Math.PI, 0);
         ctx.fill();
-        ctx.fillRect(-12, -39, 24, 5);
+        ctx.fillRect(-12, -39 + bob, 24, 5);
 
-        // 7. Золотой Сияющий Крест на груди
+        // 7. Золотой Наперсный Крест с сиянием
         ctx.fillStyle = "#ffd700";
         ctx.shadowColor = "#ffe600";
-        ctx.shadowBlur = 15;
-        ctx.fillRect(-3, -18, 6, 12);
-        ctx.fillRect(-7, -15, 14, 4);
+        ctx.shadowBlur = 16;
+        ctx.fillRect(-3, -18 + bob, 6, 12);
+        ctx.fillRect(-7, -15 + bob, 14, 4);
         ctx.shadowBlur = 0;
 
-        // Надпись "Отец Стефан" над головой
+        // Имя с золотой тенью
         ctx.font = "bold 14px 'Cinzel', serif";
         ctx.fillStyle = "#ffd700";
         ctx.textAlign = "center";
         ctx.shadowColor = "#000";
-        ctx.shadowBlur = 5;
-        ctx.fillText("Отец Стефан", 0, -52);
+        ctx.shadowBlur = 6;
+        ctx.fillText("Отец Стефан", 0, -54 + bob);
         ctx.shadowBlur = 0;
 
         ctx.restore();
@@ -196,17 +198,18 @@ class NPC {
         ctx.save();
         ctx.translate(Math.round(this.x), Math.round(this.y));
 
-        const bob = Math.sin(this.animTimer * 3) * 1.5;
+        const bob = Math.sin(this.animTimer * 2.5) * 1.5;
 
         // Тень
-        ctx.fillStyle = "rgba(10, 5, 0, 0.35)";
+        ctx.fillStyle = "rgba(10, 5, 0, 0.4)";
         ctx.beginPath();
         ctx.ellipse(0, 8, 14, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
         if (this.id === "pan_janusz") {
+            // Шляхтич Пан Януш
             ctx.fillStyle = "#8b1a1a";
-            ctx.fillRect(-11, -22 + bob, 22, 22);
+            ctx.fillRect(-12, -22 + bob, 24, 22);
 
             ctx.fillStyle = "#ffd700";
             ctx.fillRect(-2, -18 + bob, 4, 14);
@@ -232,11 +235,12 @@ class NPC {
             ctx.fillRect(4, -42 + bob, 3, 8);
 
         } else if (this.id === "cossack_grom") {
+            // Атаман Гром
             ctx.fillStyle = "#1e3a5f";
-            ctx.fillRect(-10, -20 + bob, 20, 20);
+            ctx.fillRect(-11, -20 + bob, 22, 20);
 
             ctx.fillStyle = "#b81d1d";
-            ctx.fillRect(-10, -10 + bob, 20, 4);
+            ctx.fillRect(-11, -10 + bob, 22, 4);
 
             ctx.fillStyle = "#e8b88b";
             ctx.beginPath();
@@ -244,12 +248,7 @@ class NPC {
             ctx.fill();
 
             ctx.fillStyle = "#1f1811";
-            ctx.beginPath();
-            ctx.moveTo(-7, -23 + bob);
-            ctx.lineTo(7, -23 + bob);
-            ctx.lineTo(5, -17 + bob);
-            ctx.lineTo(-5, -17 + bob);
-            ctx.fill();
+            ctx.fillRect(-7, -23 + bob, 14, 4);
 
             ctx.fillStyle = "#14100c";
             ctx.beginPath();
@@ -257,10 +256,11 @@ class NPC {
             ctx.fill();
 
         } else if (this.id === "yankel") {
+            // Янкель-шинкарь
             ctx.fillStyle = "#3d5c38";
-            ctx.fillRect(-10, -20 + bob, 20, 20);
+            ctx.fillRect(-11, -20 + bob, 22, 20);
             ctx.fillStyle = "#f5f0db";
-            ctx.fillRect(-7, -14 + bob, 14, 14);
+            ctx.fillRect(-8, -14 + bob, 16, 14);
 
             ctx.fillStyle = "#e0b388";
             ctx.beginPath();
@@ -270,16 +270,11 @@ class NPC {
             ctx.fillStyle = "#291d12";
             ctx.fillRect(-8, -26 + bob, 3, 10);
             ctx.fillRect(5, -26 + bob, 3, 10);
-            ctx.fillRect(-6, -22 + bob, 12, 8);
 
         } else {
+            // Ганна
             ctx.fillStyle = "#8a6d4b";
-            ctx.beginPath();
-            ctx.moveTo(-12, 4 + bob);
-            ctx.lineTo(-8, -20 + bob);
-            ctx.lineTo(8, -20 + bob);
-            ctx.lineTo(12, 4 + bob);
-            ctx.fill();
+            ctx.fillRect(-10, -20 + bob, 20, 24);
 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(-6, -18 + bob, 12, 10);
@@ -295,7 +290,7 @@ class NPC {
         ctx.textAlign = "center";
         ctx.shadowColor = "#000";
         ctx.shadowBlur = 4;
-        ctx.fillText(this.name, 0, -42 + bob);
+        ctx.fillText(this.name, 0, -44 + bob);
         ctx.shadowBlur = 0;
 
         ctx.restore();
