@@ -1,11 +1,12 @@
 /* ==========================================================================
-   MAIN.JS — Главный игровой цикл, обработка ввода и связи с UI
+   MAIN.JS — Главный игровой цикл, управление на WASD/Стрелки и клавишу B
    ========================================================================== */
 
 class Game {
     constructor() {
         this.renderer = new GameRenderer('gameCanvas');
-        this.player = new Player(200, 300); // Спавн у Плебании
+        // Спавн прямо перед дверью Плебании на открытом пространстве!
+        this.player = new Player(190, 410);
 
         this.npcs = [
             new NPC({
@@ -59,23 +60,32 @@ class Game {
     }
 
     initInput() {
-        // Захват клавиатуры
+        // Управление клавиатурой: WASD, Стрелки, а также русская раскладка
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
-            this.keys[e.key] = true; // Для поддержки любой языковой раскладки
+            this.keys[e.key] = true;
 
+            // Взаимодействие (E или Пробел)
             if (e.code === 'KeyE' || e.code === 'Space' || e.key === 'e' || e.key === 'E' || e.key === 'у' || e.key === 'У') {
                 this.handleInteraction();
-            } else if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'о') {
+            } 
+            // Квесты (J)
+            else if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'J' || e.key === 'о' || e.key === 'О') {
                 this.toggleModal('journalModal');
                 this.renderJournal();
-            } else if (e.code === 'KeyI' || e.key === 'i' || e.key === 'ш') {
+            } 
+            // Инвентарь (I)
+            else if (e.code === 'KeyI' || e.key === 'i' || e.key === 'I' || e.key === 'ш' || e.key === 'Ш') {
                 this.toggleModal('inventoryModal');
                 this.renderInventory();
-            } else if (e.code === 'KeyM' || e.key === 'm' || e.key === 'ь') {
+            } 
+            // МЕТРИЧЕСКАЯ КНИГА СТРОГО НА КЛАВИШУ B / И
+            else if (e.code === 'KeyB' || e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') {
                 this.toggleModal('registerModal');
                 this.renderRegister();
-            } else if (e.code === 'Escape') {
+            } 
+            // Закрытие окон (Esc)
+            else if (e.code === 'Escape') {
                 this.closeAllModals();
             }
         });
@@ -83,16 +93,6 @@ class Game {
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
             this.keys[e.key] = false;
-        });
-
-        // ДВИЖЕНИЕ ПО КЛИКУ МЫШИ НА ХОЛСТЕ
-        const canvas = document.getElementById('gameCanvas');
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left + this.renderer.camera.x;
-            const mouseY = e.clientY - rect.top + this.renderer.camera.y;
-
-            this.player.setTarget(mouseX, mouseY);
         });
     }
 
@@ -137,6 +137,7 @@ class Game {
 
         timeManager.update(deltaTime);
 
+        // Обновление движения только от WASD/Стрелок
         this.player.update(deltaTime, this.keys);
         for (let npc of this.npcs) {
             npc.update(deltaTime, timeManager.gameHours);
