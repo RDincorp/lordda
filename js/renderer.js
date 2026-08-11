@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RENDERER.JS — Высокодетализированная Canvas 2D графика и атмосфера
+   RENDERER.JS — Движок отрисовки уличной карты и интерьеров зданий
    ========================================================================== */
 
 class GameRenderer {
@@ -9,16 +9,14 @@ class GameRenderer {
         
         this.camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
         this.particles = [];
+        this.fadeAlpha = 0; // Для затемнения при переходе в здания
 
-        // Текстурный паттерн травы и каменных брусчаток
         this.initPatterns();
-
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
 
     initPatterns() {
-        // Создаём процедурную текстуру травы с цветами
         const canvasGrass = document.createElement('canvas');
         canvasGrass.width = 64;
         canvasGrass.height = 64;
@@ -27,7 +25,6 @@ class GameRenderer {
         ctxG.fillStyle = "#3d542a";
         ctxG.fillRect(0, 0, 64, 64);
 
-        // Травинки и цветы
         for (let i = 0; i < 30; i++) {
             const gx = Math.random() * 64;
             const gy = Math.random() * 64;
@@ -36,7 +33,7 @@ class GameRenderer {
 
             if (Math.random() < 0.15) {
                 ctxG.fillStyle = Math.random() < 0.5 ? "#f7d75a" : "#ffffff";
-                ctxG.fillRect(gx, gy, 2, 2); // Полевые цветы
+                ctxG.fillRect(gx, gy, 2, 2);
             }
         }
         this.grassPattern = this.ctx.createPattern(canvasGrass, 'repeat');
@@ -48,14 +45,23 @@ class GameRenderer {
     }
 
     updateCamera(player) {
-        this.camera.targetX = player.x - this.canvas.width / 2;
-        this.camera.targetY = player.y - this.canvas.height / 2;
+        if (gameWorld.currentLocation === "outdoor") {
+            this.camera.targetX = player.x - this.canvas.width / 2;
+            this.camera.targetY = player.y - this.canvas.height / 2;
 
-        this.camera.x += (this.camera.targetX - this.camera.x) * 0.12;
-        this.camera.y += (this.camera.targetY - this.camera.y) * 0.12;
+            this.camera.x += (this.camera.targetX - this.camera.x) * 0.12;
+            this.camera.y += (this.camera.targetY - this.camera.y) * 0.12;
 
-        this.camera.x = Math.max(0, Math.min(gameWorld.width - this.canvas.width, this.camera.x));
-        this.camera.y = Math.max(0, Math.min(gameWorld.height - this.canvas.height, this.camera.y));
+            this.camera.x = Math.max(0, Math.min(gameWorld.width - this.canvas.width, this.camera.x));
+            this.camera.y = Math.max(0, Math.min(gameWorld.height - this.canvas.height, this.camera.y));
+        } else {
+            // Камера зафиксирована по центру интерьера
+            const interior = gameWorld.interiors[gameWorld.currentLocation];
+            if (interior) {
+                this.camera.x = interior.width / 2 - this.canvas.width / 2;
+                this.camera.y = interior.height / 2 - this.canvas.height / 2;
+            }
+        }
     }
 
     render(player, npcs) {
@@ -64,73 +70,73 @@ class GameRenderer {
         this.ctx.save();
         this.ctx.translate(-Math.round(this.camera.x), -Math.round(this.camera.y));
 
-        // 1. Детализированный ландшафт
-        this.drawGround();
+        if (gameWorld.currentLocation === "outdoor") {
+            // Отрисовка улицы
+            this.drawGround();
 
-        // 2. Y-сортировка всех объектов мира
-        const renderQueue = [];
+            const renderQueue = [];
 
-        // Здания
-        for (let b of gameWorld.buildings) {
+            for (let b of gameWorld.buildings) {
+                renderQueue.push({
+                    y: b.y + b.height - 5,
+                    draw: () => this.drawDetailedBuilding(b)
+                });
+            }
+
+            for (let obj of gameWorld.interactiveObjects) {
+                renderQueue.push({
+                    y: obj.y,
+                    draw: () => this.drawObject(obj)
+                });
+            }
+
             renderQueue.push({
-                y: b.y + b.height - 5,
-                draw: () => this.drawDetailedBuilding(b)
+                y: player.y,
+                draw: () => player.draw(this.ctx)
             });
+
+            for (let npc of npcs) {
+                renderQueue.push({
+                    y: npc.y,
+                    draw: () => npc.draw(this.ctx)
+                });
+            }
+
+            for (let dec of gameWorld.decorations) {
+                renderQueue.push({
+                    y: dec.y,
+                    draw: () => this.drawDecoration(dec)
+                });
+            }
+
+            renderQueue.sort((a, b) => a.y - b.y);
+
+            for (let item of renderQueue) {
+                item.draw();
+            }
+
+            this.updateAndDrawParticles();
+            this.drawDayNightLighting();
+
+        } else {
+            // Отрисовка интерьера
+            this.drawInterior(gameWorld.currentLocation, player);
         }
 
-        // Интерактивные объекты
-        for (let obj of gameWorld.interactiveObjects) {
-            renderQueue.push({
-                y: obj.y,
-                draw: () => this.drawObject(obj)
-            });
+        // Затеменение перехода
+        if (this.fadeAlpha > 0) {
+            this.ctx.fillStyle = `rgba(0,0,0,${this.fadeAlpha})`;
+            this.ctx.fillRect(this.camera.x, this.camera.y, this.canvas.width, this.canvas.height);
         }
-
-        // Игрок
-        renderQueue.push({
-            y: player.y,
-            draw: () => player.draw(this.ctx)
-        });
-
-        // NPC
-        for (let npc of npcs) {
-            renderQueue.push({
-                y: npc.y,
-                draw: () => npc.draw(this.ctx)
-            });
-        }
-
-        // Деревья и декор
-        for (let dec of gameWorld.decorations) {
-            renderQueue.push({
-                y: dec.y,
-                draw: () => this.drawDetailedTree(dec)
-            });
-        }
-
-        // Сортировка по Y
-        renderQueue.sort((a, b) => a.y - b.y);
-
-        for (let item of renderQueue) {
-            item.draw();
-        }
-
-        // 3. Анимация дыма, искорок и тумана
-        this.updateAndDrawParticles();
-
-        // 4. Суточное освещение и световые блики
-        this.drawDayNightLighting();
 
         this.ctx.restore();
     }
 
-    // Детализированный ландшафт
     drawGround() {
-        // Трава с текстурным рисунком
         this.ctx.fillStyle = this.grassPattern || "#3d542a";
         this.ctx.fillRect(0, 0, gameWorld.width, gameWorld.height);
 
-        // Грунтовая дорога с гравием и булыжниками
+        // Грунтовая дорога
         this.ctx.fillStyle = "#826543";
         this.ctx.beginPath();
         this.ctx.moveTo(80, 360);
@@ -140,12 +146,7 @@ class GameRenderer {
         this.ctx.lineTo(80, 400);
         this.ctx.fill();
 
-        // Обочина дороги
-        this.ctx.strokeStyle = "#5e452a";
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-
-        // Булыжники на площади перед храмом и корчмой
+        // Булыжники на площади
         this.ctx.fillStyle = "#6b563d";
         for (let cx = 320; cx < 620; cx += 25) {
             for (let cy = 370; cy < 450; cy += 18) {
@@ -161,16 +162,74 @@ class GameRenderer {
         this.ctx.arc(1600, 1000, 260, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Водные блики
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-        for (let i = 0; i < 5; i++) {
-            this.ctx.fillRect(1450 + i * 30, 920 + i * 20, 40, 3);
+        // Деревянный пирс
+        this.ctx.fillStyle = "#422e1b";
+        this.ctx.fillRect(1380, 960, 60, 20);
+    }
+
+    // РЕНДЕР ИНТЕРЬЕРОВ
+    drawInterior(interiorId, player) {
+        const interior = gameWorld.interiors[interiorId];
+        if (!interior) return;
+
+        // Пол комнаты (Деревянные доски)
+        this.ctx.fillStyle = "#3d2716";
+        this.ctx.fillRect(0, 0, interior.width, interior.height);
+
+        // Узор половиц
+        this.ctx.strokeStyle = "#24180d";
+        this.ctx.lineWidth = 2;
+        for (let py = 20; py < interior.height; py += 24) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(20, py);
+            this.ctx.lineTo(interior.width - 20, py);
+            this.ctx.stroke();
+        }
+
+        // Стены комнаты
+        this.ctx.fillStyle = "#1e130a";
+        this.ctx.fillRect(0, 0, interior.width, 30); // Верхняя стена
+        this.ctx.fillRect(0, 0, 20, interior.height); // Левая стена
+        this.ctx.fillRect(interior.width - 20, 0, 20, interior.height); // Правая стена
+        this.ctx.fillRect(0, interior.height - 20, interior.width, 20); // Нижняя стена
+
+        // Название комнаты
+        this.ctx.font = "bold 16px 'Cinzel', serif";
+        this.ctx.fillStyle = "#ffd700";
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(interior.name, interior.width / 2, 22);
+
+        // Отрисовка объектов интерьера
+        for (let obj of interior.objects) {
+            this.ctx.font = "32px sans-serif";
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(obj.icon, obj.x, obj.y);
+
+            this.ctx.font = "12px 'Cormorant Garamond', serif";
+            this.ctx.fillStyle = "#fce8c3";
+            this.ctx.fillText(obj.name, obj.x, obj.y - 25);
+        }
+
+        // Игрок внутри
+        player.draw(this.ctx);
+
+        // Внутреннее теплое освещение
+        for (let light of interior.lights || []) {
+            let rad = light.radius;
+            if (light.isFlickering) rad += (Math.random() * 8 - 4);
+
+            const grad = this.ctx.createRadialGradient(light.x, light.y, 5, light.x, light.y, rad);
+            grad.addColorStop(0, light.color);
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            this.ctx.fillStyle = grad;
+            this.ctx.beginPath();
+            this.ctx.arc(light.x, light.y, rad, 0, Math.PI * 2);
+            this.ctx.fill();
         }
     }
 
-    // ВЫСОКОДЕТАЛИЗИРОВАННЫЕ ЗДАНИЯ
     drawDetailedBuilding(b) {
-        // Динамическая длинная тень в зависимости от времени суток
         const shadowAngle = (timeManager.gameHours - 12) * 0.15;
         this.ctx.fillStyle = "rgba(10, 5, 0, 0.35)";
         this.ctx.beginPath();
@@ -180,20 +239,12 @@ class GameRenderer {
         this.ctx.lineTo(b.x + shadowAngle * 40, b.y + b.height + 25);
         this.ctx.fill();
 
-        // Каменный фундамент
         this.ctx.fillStyle = "#4a4238";
         this.ctx.fillRect(b.x, b.y + b.height - 15, b.width, 15);
-        this.ctx.strokeStyle = "#2b251d";
-        this.ctx.lineWidth = 1;
-        for (let fx = b.x; fx < b.x + b.width; fx += 20) {
-            this.ctx.strokeRect(fx, b.y + b.height - 15, 20, 15);
-        }
 
-        // Деревянный сруб
         this.ctx.fillStyle = b.color;
         this.ctx.fillRect(b.x, b.y + 35, b.width, b.height - 50);
 
-        // Объёмные тёмные брёвна с выемками
         this.ctx.strokeStyle = "#2e1e12";
         this.ctx.lineWidth = 2;
         for (let ly = b.y + 45; ly < b.y + b.height - 15; ly += 14) {
@@ -201,35 +252,15 @@ class GameRenderer {
             this.ctx.moveTo(b.x, ly);
             this.ctx.lineTo(b.x + b.width, ly);
             this.ctx.stroke();
-
-            // Железные кованые гвозди
-            this.ctx.fillStyle = "#120b06";
-            this.ctx.fillRect(b.x + 8, ly - 3, 2, 2);
-            this.ctx.fillRect(b.x + b.width - 8, ly - 3, 2, 2);
         }
 
-        // Окна здания с резными наличниками
+        // Окна
         const isNight = timeManager.gameHours < 6 || timeManager.gameHours >= 20;
-        const windowGlow = isNight ? "#ffd700" : "#a2c4c9";
-
-        this.ctx.fillStyle = windowGlow;
-        if (isNight) {
-            this.ctx.shadowColor = "#ffa500";
-            this.ctx.shadowBlur = 15;
-        }
-
-        // 2 Окна по бокам
+        this.ctx.fillStyle = isNight ? "#ffd700" : "#a2c4c9";
         this.ctx.fillRect(b.x + 30, b.y + 60, 24, 32);
         this.ctx.fillRect(b.x + b.width - 54, b.y + 60, 24, 32);
-        this.ctx.shadowBlur = 0;
 
-        // Деревянная оконная рама
-        this.ctx.strokeStyle = "#382314";
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(b.x + 30, b.y + 60, 24, 32);
-        this.ctx.strokeRect(b.x + b.width - 54, b.y + 60, 24, 32);
-
-        // Черепичная / гонтовая Крыша
+        // Крыша
         this.ctx.fillStyle = b.roofColor;
         this.ctx.beginPath();
         this.ctx.moveTo(b.x - 20, b.y + 35);
@@ -238,28 +269,15 @@ class GameRenderer {
         this.ctx.closePath();
         this.ctx.fill();
 
-        // Рельеф гонта/гонтовой черепицы
-        this.ctx.strokeStyle = "rgba(0,0,0,0.3)";
-        for (let ry = b.y - 20; ry < b.y + 35; ry += 10) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(b.x - 10, ry);
-            this.ctx.lineTo(b.x + b.width + 10, ry);
-            this.ctx.stroke();
-        }
-
-        // ОСОБЕННОСТИ ДЛЯ ЦЕРКВИ
         if (b.type === "wooden_church") {
-            // Позолоченный Восьмиконечный Униатский Купол
             const cx = b.x + b.width / 2;
             const cy = b.y - 45;
 
-            // Купол
             this.ctx.fillStyle = "#d4af37";
             this.ctx.beginPath();
             this.ctx.arc(cx, cy, 22, 0, Math.PI * 2);
             this.ctx.fill();
 
-            // Золотой Сияющий Крест
             this.ctx.strokeStyle = "#ffd700";
             this.ctx.lineWidth = 4;
             this.ctx.beginPath();
@@ -268,52 +286,49 @@ class GameRenderer {
             this.ctx.moveTo(cx - 12, cy - 35);
             this.ctx.lineTo(cx + 12, cy - 35);
             this.ctx.moveTo(cx - 8, cy - 26);
-            this.ctx.lineTo(cx + 8, cy - 22); // Косая перекладина
+            this.ctx.lineTo(cx + 8, cy - 22);
             this.ctx.stroke();
         }
 
-        // Дверной портал
+        // Дверь
         this.ctx.fillStyle = "#29180c";
         this.ctx.fillRect(b.doorX - 16, b.doorY - 40, 32, 40);
         this.ctx.strokeStyle = "#d4af37";
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(b.doorX - 16, b.doorY - 40, 32, 40);
 
-        // Позолоченное название
         this.ctx.font = "bold 14px 'Cinzel', serif";
         this.ctx.fillStyle = "#ffe0a3";
         this.ctx.textAlign = "center";
-        this.ctx.shadowColor = "#000";
-        this.ctx.shadowBlur = 4;
         this.ctx.fillText(b.name, b.x + b.width / 2, b.y + 20);
-        this.ctx.shadowBlur = 0;
     }
 
-    // Деревья с кроной
-    drawDetailedTree(t) {
-        // Тень
-        this.ctx.fillStyle = "rgba(10, 5, 0, 0.35)";
-        this.ctx.beginPath();
-        this.ctx.ellipse(t.x, t.y, t.size * 0.9, t.size * 0.35, 0, 0, Math.PI * 2);
-        this.ctx.fill();
+    drawDecoration(dec) {
+        if (dec.type === "tree") {
+            this.ctx.fillStyle = "rgba(10, 5, 0, 0.35)";
+            this.ctx.beginPath();
+            this.ctx.ellipse(dec.x, dec.y, dec.size * 0.9, dec.size * 0.35, 0, 0, Math.PI * 2);
+            this.ctx.fill();
 
-        // Ствол дуба
-        this.ctx.fillStyle = "#382313";
-        this.ctx.fillRect(t.x - 8, t.y - 35, 16, 35);
+            this.ctx.fillStyle = "#382313";
+            this.ctx.fillRect(dec.x - 8, dec.y - 35, 16, 35);
 
-        // Пышная крона из 3 шаров
-        this.ctx.fillStyle = "#274218";
-        this.ctx.beginPath();
-        this.ctx.arc(t.x - 12, t.y - 50, t.size * 0.7, 0, Math.PI * 2);
-        this.ctx.arc(t.x + 12, t.y - 50, t.size * 0.7, 0, Math.PI * 2);
-        this.ctx.arc(t.x, t.y - 65, t.size * 0.85, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Светлые блики на кроне
-        this.ctx.fillStyle = "#3a5c23";
-        this.ctx.beginPath();
-        this.ctx.arc(t.x - 5, t.y - 70, t.size * 0.4, 0, Math.PI * 2);
-        this.ctx.fill();
+            this.ctx.fillStyle = "#274218";
+            this.ctx.beginPath();
+            this.ctx.arc(dec.x - 12, dec.y - 50, dec.size * 0.7, 0, Math.PI * 2);
+            this.ctx.arc(dec.x + 12, dec.y - 50, dec.size * 0.7, 0, Math.PI * 2);
+            this.ctx.arc(dec.x, dec.y - 65, dec.size * 0.85, 0, Math.PI * 2);
+            this.ctx.fill();
+        } else if (dec.type === "fence") {
+            this.ctx.fillStyle = "#4a3321";
+            this.ctx.fillRect(dec.x, dec.y, dec.width, 10);
+        } else if (dec.type === "cart") {
+            this.ctx.font = "28px sans-serif";
+            this.ctx.fillText("🛒", dec.x, dec.y);
+        } else if (dec.type === "grave") {
+            this.ctx.font = "24px sans-serif";
+            this.ctx.fillText("🪦", dec.x, dec.y);
+        }
     }
 
     drawObject(obj) {
@@ -321,7 +336,6 @@ class GameRenderer {
         this.ctx.textAlign = "center";
         this.ctx.fillText(obj.icon, obj.x, obj.y);
 
-        // Дым/искорки
         if (obj.id === "cossack_fire" && Math.random() < 0.5) {
             this.particles.push({
                 x: obj.x + (Math.random() * 20 - 10),
@@ -364,7 +378,6 @@ class GameRenderer {
         this.ctx.globalAlpha = lighting.alpha;
         this.ctx.fillRect(0, 0, gameWorld.width, gameWorld.height);
 
-        // Вырезание света фонарей и свечей
         this.ctx.globalCompositeOperation = 'destination-out';
 
         for (let light of gameWorld.lightSources) {

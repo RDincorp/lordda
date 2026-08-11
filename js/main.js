@@ -1,11 +1,10 @@
 /* ==========================================================================
-   MAIN.JS — Главный игровой цикл, управление на WASD/Стрелки и клавишу B
+   MAIN.JS — Главный цикл игры, входы/выходы в здания, интерьеры и механики
    ========================================================================== */
 
 class Game {
     constructor() {
         this.renderer = new GameRenderer('gameCanvas');
-        // Спавн прямо перед дверью Плебании на открытом пространстве!
         this.player = new Player(190, 410);
 
         this.npcs = [
@@ -60,32 +59,22 @@ class Game {
     }
 
     initInput() {
-        // Управление клавиатурой: WASD, Стрелки, а также русская раскладка
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
             this.keys[e.key] = true;
 
-            // Взаимодействие (E или Пробел)
             if (e.code === 'KeyE' || e.code === 'Space' || e.key === 'e' || e.key === 'E' || e.key === 'у' || e.key === 'У') {
                 this.handleInteraction();
-            } 
-            // Квесты (J)
-            else if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'J' || e.key === 'о' || e.key === 'О') {
+            } else if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'J' || e.key === 'о' || e.key === 'О') {
                 this.toggleModal('journalModal');
                 this.renderJournal();
-            } 
-            // Инвентарь (I)
-            else if (e.code === 'KeyI' || e.key === 'i' || e.key === 'I' || e.key === 'ш' || e.key === 'Ш') {
+            } else if (e.code === 'KeyI' || e.key === 'i' || e.key === 'I' || e.key === 'ш' || e.key === 'Ш') {
                 this.toggleModal('inventoryModal');
                 this.renderInventory();
-            } 
-            // МЕТРИЧЕСКАЯ КНИГА СТРОГО НА КЛАВИШУ B / И
-            else if (e.code === 'KeyB' || e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') {
+            } else if (e.code === 'KeyB' || e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') {
                 this.toggleModal('registerModal');
                 this.renderRegister();
-            } 
-            // Закрытие окон (Esc)
-            else if (e.code === 'Escape') {
+            } else if (e.code === 'Escape') {
                 this.closeAllModals();
             }
         });
@@ -137,10 +126,12 @@ class Game {
 
         timeManager.update(deltaTime);
 
-        // Обновление движения только от WASD/Стрелок
         this.player.update(deltaTime, this.keys);
-        for (let npc of this.npcs) {
-            npc.update(deltaTime, timeManager.gameHours);
+        
+        if (gameWorld.currentLocation === "outdoor") {
+            for (let npc of this.npcs) {
+                npc.update(deltaTime, timeManager.gameHours);
+            }
         }
 
         this.renderer.updateCamera(this.player);
@@ -154,22 +145,24 @@ class Game {
         const promptEl = document.getElementById('interactionPrompt');
         const textEl = document.getElementById('interactionText');
 
-        let nearestNPC = null;
-        let minDist = 70;
+        if (gameWorld.currentLocation === "outdoor") {
+            let nearestNPC = null;
+            let minDist = 70;
 
-        for (let npc of this.npcs) {
-            const dist = Math.hypot(npc.x - this.player.x, npc.y - this.player.y);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestNPC = npc;
+            for (let npc of this.npcs) {
+                const dist = Math.hypot(npc.x - this.player.x, npc.y - this.player.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestNPC = npc;
+                }
             }
-        }
 
-        if (nearestNPC) {
-            this.currentInteractable = { type: 'npc', data: nearestNPC };
-            textEl.innerText = `Поговорить с ${nearestNPC.name}`;
-            promptEl.classList.remove('hidden');
-            return;
+            if (nearestNPC) {
+                this.currentInteractable = { type: 'npc', data: nearestNPC };
+                textEl.innerText = `Поговорить с ${nearestNPC.name}`;
+                promptEl.classList.remove('hidden');
+                return;
+            }
         }
 
         const nearestObj = gameWorld.getNearestInteractable(this.player.x, this.player.y);
@@ -196,7 +189,19 @@ class Game {
         } else if (this.currentInteractable.type === 'object') {
             const obj = this.currentInteractable.data;
 
-            if (obj.id === "desk_parsonage") {
+            // Вход в здание
+            if (obj.isBuildingEntrance) {
+                const b = obj.building;
+                if (b && b.interiorId) {
+                    this.enterInterior(b.interiorId);
+                }
+            } 
+            // Выход из здания
+            else if (obj.isExit) {
+                this.exitInterior();
+            }
+            // Прочие объекты
+            else if (obj.id === "desk_parsonage") {
                 this.toggleModal('registerModal');
                 this.renderRegister();
             } else if (obj.id === "bell_tower") {
@@ -206,9 +211,36 @@ class Game {
             } else if (obj.id === "candles_church") {
                 this.questEngine.completeStep("q1_liturgy", "s1");
                 this.addNotification("Вы зажгли свечи у клироса и алтаря.");
+            } else if (obj.id === "parsonage_bed") {
+                timeManager.gameHours = (timeManager.gameHours + 6) % 24;
+                this.addNotification("Отец Стефан отдохнул. Прошло 6 часов.");
             } else {
                 this.openInspect(obj.name, obj.description);
             }
+        }
+    }
+
+    enterInterior(interiorId) {
+        audioEngine.playPageTurn();
+        gameWorld.currentLocation = interiorId;
+        const interior = gameWorld.interiors[interiorId];
+
+        if (interior) {
+            this.player.x = interior.exitX;
+            this.player.y = interior.exitY - 40;
+            this.addNotification(`Вы вошли: ${interior.name}`);
+        }
+    }
+
+    exitInterior() {
+        audioEngine.playPageTurn();
+        const currentInt = gameWorld.interiors[gameWorld.currentLocation];
+        gameWorld.currentLocation = "outdoor";
+
+        if (currentInt) {
+            this.player.x = currentInt.returnX;
+            this.player.y = currentInt.returnY;
+            this.addNotification("Вы вышли на улицу Покровской Веси.");
         }
     }
 
