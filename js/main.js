@@ -15,10 +15,10 @@ class Game {
                 name: "Пан Януш",
                 title: "Шляхтич и меценат",
                 portrait: "👑",
-                x: 1350, y: 390,
+                x: 1350, y: 430,
                 schedule: [
-                    { startHour: 8, endHour: 18, targetX: 1350, targetY: 390 },
-                    { startHour: 18, endHour: 22, targetX: 880, targetY: 660 }
+                    { startHour: 8, endHour: 18, targetX: 1350, targetY: 430 },
+                    { startHour: 18, endHour: 22, targetX: 870, targetY: 710 }
                 ]
             }),
             new NPC({
@@ -26,7 +26,7 @@ class Game {
                 name: "Янкель-шинкарь",
                 title: "Владелец корчмы",
                 portrait: "🧔",
-                x: 870, y: 640
+                x: 870, y: 710
             }),
             new NPC({
                 id: "cossack_grom",
@@ -40,14 +40,14 @@ class Game {
                 name: "Ганна",
                 title: "Крестьянка",
                 portrait: "👵",
-                x: 480, y: 390
+                x: 480, y: 440
             }),
             new NPC({
                 id: "diak_bogdan",
                 name: "Дьяк Богдан",
                 title: "Приходской дьяк",
                 portrait: "📖",
-                x: 430, y: 390
+                x: 400, y: 440
             })
         ];
 
