@@ -9,6 +9,44 @@ class TimeManager {
         this.currentDay = 1;
         this.timeSpeed = 1; // 1x, 5x, 20x
         this.lastBellHour = -1;
+
+        // Погода
+        this.weather = "clear"; // "clear", "rain", "fog"
+        this.windStrength = 1.0;
+        this.sunAngle = 0;
+        this.sunIntensity = 0;
+    }
+
+    generateWeather() {
+        const rand = Math.random();
+        if (rand < 0.25) {
+            this.weather = "rain";
+            this.windStrength = 2.5 + Math.random() * 1.5;
+        } else if (rand < 0.45) {
+            this.weather = "fog";
+            this.windStrength = 0.2;
+        } else {
+            this.weather = "clear";
+            this.windStrength = 0.5 + Math.random() * 1.5;
+        }
+    }
+
+    calculateSunAngle() {
+        const h = this.gameHours;
+        
+        // Солнце активно светит с 5:00 до 19:00
+        if (h >= 5 && h < 19) {
+            const progress = (h - 5) / 14; // от 0 до 1
+            // Тень идет от запада на восток (Солнце идет с востока на запад)
+            this.sunIntensity = Math.sin(progress * Math.PI); // 0 -> 1 -> 0
+            return progress * Math.PI - Math.PI/2; // Угол тени
+        } else if (h >= 19 || h < 5) {
+            // Ночью тени лунные (слабые)
+            let progress = h >= 19 ? (h - 19) / 10 : (h + 5) / 10;
+            this.sunIntensity = Math.sin(progress * Math.PI) * 0.4;
+            return progress * Math.PI - Math.PI/2; 
+        }
+        return 0;
     }
 
     update(deltaTimeSeconds) {
@@ -18,9 +56,13 @@ class TimeManager {
         
         this.gameHours += hoursPassed;
 
+        // Расчет угла солнца для теней
+        this.sunAngle = this.calculateSunAngle();
+
         if (this.gameHours >= 24) {
             this.gameHours -= 24;
             this.currentDay++;
+            this.generateWeather(); // Генерация погоды каждый новый день
             if (window.mainGame) {
                 window.mainGame.addNotification(`Наступил День ${this.currentDay}`);
             }

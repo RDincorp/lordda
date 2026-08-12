@@ -51,6 +51,26 @@ class GameWorld {
                 type: "estate",
                 interiorId: "manor_interior",
                 description: "Пышная шляхетская усадьба."
+            },
+            {
+                id: "peasant_hut_1",
+                name: "Хата Петра и Ганны",
+                x: 480, y: 700, width: 160, height: 130,
+                doorX: 560, doorY: 820,
+                color: "#7e5c3b", roofColor: "#3b2b18",
+                type: "house",
+                interiorId: "hut_interior_1",
+                description: "Скромная соломенная хата крестьян."
+            },
+            {
+                id: "peasant_hut_2",
+                name: "Крестьянская Хата",
+                x: 200, y: 700, width: 160, height: 130,
+                doorX: 280, doorY: 820,
+                color: "#7e5c3b", roofColor: "#3b2b18",
+                type: "house",
+                interiorId: "hut_interior_2",
+                description: "Белёная хата приходского кузнеца."
             }
         ];
 
@@ -60,12 +80,12 @@ class GameWorld {
                 name: "Интерьер Храма Покрова Богородицы",
                 width: 600, height: 500,
                 exitX: 300, exitY: 460, // Точка выхода из здания
-                returnX: 490, returnY: 410, // Точка при возврате на улицу
+                returnX: 490, returnY: 435, // Точка при возврате на улицу (строго вне коллизии храма)
                 objects: [
                     { id: "altar", name: "Алтарный Иконостас", x: 300, y: 120, radius: 45, icon: "☦️", actionText: "Помолиться у иконостаса", description: "Главный иконостас с образом Покрова Богородицы." },
                     { id: "candles_church", name: "Подсвечник у клироса", x: 220, y: 180, radius: 35, icon: "🕯️", actionText: "Зажечь свечи", description: "Восковые свечи для молитвы." },
                     { id: "confessional", name: "Исповедальня", x: 450, y: 220, radius: 40, icon: "🪑", actionText: "Выслушать исповедь прихожан", description: "Деревянная исповедальня." },
-                    { id: "church_exit", name: "Выход из храма", x: 300, y: 470, radius: 40, icon: "🚪", actionText: "Выйти на улицу (E)", isExit: true }
+                    { id: "church_exit", name: "Выход из храма", x: 300, y: 470, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
                 ],
                 lights: [
                     { x: 300, y: 120, radius: 180, color: "rgba(255, 200, 100, 0.9)" },
@@ -77,12 +97,12 @@ class GameWorld {
                 name: "Интерьер Плебании",
                 width: 500, height: 400,
                 exitX: 250, exitY: 360,
-                returnX: 190, returnY: 400,
+                returnX: 190, returnY: 415,
                 objects: [
                     { id: "desk_parsonage", name: "Письменный стол и Метрики", x: 150, y: 150, radius: 35, icon: "📜", actionText: "Открыть Метрическую книгу (B)", description: "Дубовый стол с метрической книгой." },
                     { id: "parsonage_fireplace", name: "Камин плебании", x: 350, y: 120, radius: 40, icon: "🔥", actionText: "Подогреть узвар у камина", description: "Уютный камин, дарующий тепло." },
                     { id: "parsonage_bed", name: "Ложе священника", x: 400, y: 250, radius: 40, icon: "🛏️", actionText: "Отдохнуть (Сменить время суток)", description: "Скромное деревянное ложе." },
-                    { id: "parsonage_exit", name: "Выход из плебании", x: 250, y: 370, radius: 40, icon: "🚪", actionText: "Выйти на улицу (E)", isExit: true }
+                    { id: "parsonage_exit", name: "Выход из плебании", x: 250, y: 370, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
                 ],
                 lights: [
                     { x: 350, y: 120, radius: 160, color: "rgba(255, 140, 40, 0.85)", isFlickering: true },
@@ -94,11 +114,11 @@ class GameWorld {
                 name: "Интерьер Корчмы «Под Голубем»",
                 width: 550, height: 450,
                 exitX: 275, exitY: 410,
-                returnX: 870, returnY: 690,
+                returnX: 870, returnY: 715,
                 objects: [
                     { id: "tavern_bar", name: "Шинкарская стойка Янкеля", x: 275, y: 130, radius: 40, icon: "🍺", actionText: "Поговорить с Янкелем", description: "Стойка с дубовыми бочками." },
                     { id: "tavern_table", name: "Стол прихожан и купцов", x: 150, y: 260, radius: 45, icon: "🍷", actionText: "Послушать разговоры крестьян", description: "За этим столом обсуждают сельские вести." },
-                    { id: "tavern_exit", name: "Выход из корчмы", x: 275, y: 420, radius: 40, icon: "🚪", actionText: "Выйти на улицу (E)", isExit: true }
+                    { id: "tavern_exit", name: "Выход из корчмы", x: 275, y: 420, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
                 ],
                 lights: [
                     { x: 275, y: 130, radius: 150, color: "rgba(255, 160, 50, 0.8)" }
@@ -109,13 +129,43 @@ class GameWorld {
                 name: "Парадный Зал Усадьбы Пана Януша",
                 width: 600, height: 450,
                 exitX: 300, exitY: 410,
-                returnX: 1350, returnY: 410,
+                returnX: 1350, returnY: 425,
                 objects: [
                     { id: "manor_throne", name: "Кресло Пана Януша", x: 300, y: 120, radius: 40, icon: "🪑", actionText: "Аудиенция у Пана Януша", description: "Дубовое резное кресло с гербом Острожских." },
-                    { id: "manor_exit", name: "Выйти из усадьбы", x: 300, y: 420, radius: 40, icon: "🚪", actionText: "Выйти на улицу (E)", isExit: true }
+                    { id: "manor_exit", name: "Выйти из усадьбы", x: 300, y: 420, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
                 ],
                 lights: [
                     { x: 300, y: 120, radius: 180, color: "rgba(255, 210, 100, 0.9)" }
+                ]
+            },
+
+            hut_interior_1: {
+                name: "Хата Петра и Ганны",
+                width: 450, height: 350,
+                exitX: 225, exitY: 310,
+                returnX: 560, returnY: 865,
+                objects: [
+                    { id: "parsonage_fireplace", name: "Русская печь", x: 120, y: 120, radius: 40, icon: "🔥", actionText: "Осмотреть печь", description: "Глинобитная белёная печь с заслонкой." },
+                    { id: "altar", name: "Святой Красный угол", x: 330, y: 100, radius: 35, icon: "☦️", actionText: "Помолиться перед иконами", description: "Божница с затеплившейся лампадкой и тканным рушником." },
+                    { id: "parsonage_exit", name: "Выйти на улицу", x: 225, y: 320, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
+                ],
+                lights: [
+                    { x: 120, y: 120, radius: 120, color: "rgba(255, 160, 50, 0.8)", isFlickering: true },
+                    { x: 330, y: 100, radius: 80, color: "rgba(255, 200, 100, 0.7)" }
+                ]
+            },
+
+            hut_interior_2: {
+                name: "Крестьянская Хата",
+                width: 450, height: 350,
+                exitX: 225, exitY: 310,
+                returnX: 280, returnY: 865,
+                objects: [
+                    { id: "tavern_table", name: "Обеденный стол", x: 225, y: 150, radius: 40, icon: "🍷", actionText: "Осмотреть убранство", description: "Простой дубовый стол с глиняными крынками." },
+                    { id: "parsonage_exit", name: "Выйти на улицу", x: 225, y: 320, radius: 40, icon: "🚪", actionText: "Выйти на улицу (SPACE)", isExit: true }
+                ],
+                lights: [
+                    { x: 225, y: 150, radius: 100, color: "rgba(255, 180, 80, 0.7)" }
                 ]
             }
         };
@@ -140,18 +190,31 @@ class GameWorld {
         ];
 
         this.decorations = [];
+        this.isPlayerInBoat = false; // Флаг: находится ли игрок в лодке
         this.generateEnvironment();
     }
 
     generateEnvironment() {
-        // Деревья леса
-        for (let i = 0; i < 40; i++) {
-            this.decorations.push({
-                type: "tree",
-                x: 1280 + Math.random() * 520,
-                y: 480 + Math.random() * 800,
-                size: 32 + Math.random() * 18
-            });
+        // Деревья леса (Исключаем попадание деревьев в реку)
+        let treesPlaced = 0;
+        let attempts = 0;
+        while (treesPlaced < 45 && attempts < 200) {
+            attempts++;
+            const tx = 1200 + Math.random() * 680;
+            const ty = 450 + Math.random() * 850;
+            const size = 32 + Math.random() * 18;
+
+            // Проверка: не попадает ли дерево в реку (центр реки 1600, 1000, радиус 260)
+            const distToRiver = Math.hypot(tx - 1600, ty - 1000);
+            if (distToRiver > 300) { // Дерево строго на суше
+                this.decorations.push({
+                    type: "tree",
+                    x: tx,
+                    y: ty,
+                    size: size
+                });
+                treesPlaced++;
+            }
         }
 
         // Заборы вокруг Плебании и Храма
@@ -181,6 +244,20 @@ class GameWorld {
         // Границы улицы
         if (x - radius < 0 || x + radius > this.width || y - radius < 0 || y + radius > this.height) {
             return true;
+        }
+
+        // РЕКА И ЛОДКА (Центр реки 1600, 1000, радиус 255)
+        const distToRiver = Math.hypot(x - 1600, y - 1000);
+        if (!this.isPlayerInBoat) {
+            // Пешком НЕЛЬЗЯ заходить в глубокую воду
+            if (distToRiver < 255) {
+                return true; // Коллизия с водой!
+            }
+        } else {
+            // В лодке НЕЛЬЗЯ выплывать далеко на сушу (должен оставаться в воде)
+            if (distToRiver > 260) {
+                return true; // Коллизия с берегом!
+            }
         }
 
         // Здания
@@ -215,11 +292,11 @@ class GameWorld {
         // Если находимся НА УЛИЦЕ — проверяем входы в здания
         for (let b of this.buildings) {
             const dist = Math.hypot(b.doorX - x, b.doorY - y);
-            if (dist < 45) {
+            if (dist < 60) {
                 return {
                     id: `enter_${b.id}`,
                     name: `Вход в ${b.name}`,
-                    actionText: `Войти в ${b.name} (E)`,
+                    actionText: `Войти в ${b.name} (SPACE)`,
                     isBuildingEntrance: true,
                     building: b
                 };

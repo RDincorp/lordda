@@ -38,6 +38,18 @@ class QuestEngine {
                     { id: "s1", text: "Выслушать исповедь Ганны в церкви", done: false }
                 ],
                 reward: { repPeasants: 15 }
+            },
+            {
+                id: "q4_heresy",
+                title: "Ересь или Традиция?",
+                description: "Дьяк Богдан взволнован: прихожане творят народные обряды у колодца. Выясните суть спора.",
+                status: "active",
+                steps: [
+                    { id: "s1", text: "Поговорить с дьяком Богданом у храма", done: false },
+                    { id: "s2", text: "Осмотреть сельский колодец", done: false },
+                    { id: "s3", text: "Разрешить спор: освятить обряд или пресечь ересь", done: false }
+                ],
+                reward: { repChurch: 15, repPeasants: 10 }
             }
         ];
 
@@ -104,6 +116,14 @@ const DIALOGUES = {
                 }
             },
             {
+                text: "«Вот Земская Грамота, пан. Права на земли принадлежат шляхте.» (Завершить квест грамоты)",
+                action: (game) => {
+                    game.addReputation({ szlachta: 20, cossacks: -10 });
+                    game.questEngine.completeStep("q2_charter", "s3");
+                    game.openDialogueText("Пан Януш (улыбаясь): «Мудрое решение, отец Стефан! Шляхта не забудет вашей верности!»");
+                }
+            },
+            {
                 text: "«Бог смотрит не на богатство рода, а на чистоту сердца и милосердие к крестьянам.»",
                 action: (game) => {
                     game.addReputation({ peasants: 8, szlachta: -3 });
@@ -112,6 +132,35 @@ const DIALOGUES = {
             },
             {
                 text: "«До свидания, пан Януш.»",
+                action: (game) => game.closeDialogue()
+            }
+        ]
+    },
+
+    diak_bogdan: {
+        npcName: "Дьяк Богдан",
+        title: "Приходской дьяк и клирик",
+        portrait: "📖",
+        text: "Благословите, батюшка Стефан! Прихожане собрались на утреннюю литургию.",
+        choices: [
+            {
+                text: "«Благословен Бог наш! Начинаем литургию!» (Завершить службу)",
+                action: (game) => {
+                    game.questEngine.completeStep("q1_liturgy", "s3");
+                    game.questEngine.completeStep("q4_heresy", "s1");
+                    audioEngine.playChurchBell(180);
+                    game.openDialogueText("Дьяк Богдан запевает тропарь. В храме Покрова начинается торжественная утренняя литургия!");
+                }
+            },
+            {
+                text: "«Что скажешь о народных обрядах у колодца, Богдан?»",
+                action: (game) => {
+                    game.questEngine.completeStep("q4_heresy", "s1");
+                    game.openDialogueText("Дьяк Богдан: «Крестьяне опять ленты на ветви вяжут да воду из колодца святить просят по старому обычаю. Ересь то или традиция — вам решать, батюшка!»");
+                }
+            },
+            {
+                text: "«Бог в помощь, Богдан.»",
                 action: (game) => game.closeDialogue()
             }
         ]
@@ -152,6 +201,14 @@ const DIALOGUES = {
                 }
             },
             {
+                text: "«Я отдаю Древнюю Грамоту казакам — земля принадлежит вольному люду!» (Завершить квест)",
+                action: (game) => {
+                    game.addReputation({ cossacks: 20, szlachta: -10 });
+                    game.questEngine.completeStep("q2_charter", "s3");
+                    game.openDialogueText("Атаман Гром (радостно): «Спаси Бог тебя, святой отец! Войско Запорожское этого не забудет!»");
+                }
+            },
+            {
                 text: "«Благословение вам, казаки.»",
                 action: (game) => game.closeDialogue()
             }
@@ -174,6 +231,80 @@ const DIALOGUES = {
             },
             {
                 text: "«Иди с миром.»",
+                action: (game) => game.closeDialogue()
+            }
+        ]
+    },
+
+    traveler_kobzar: {
+        npcName: "Кобзарь Тарас",
+        title: "Странствующий певец из Чернигова",
+        portrait: "🪕",
+        text: "Мир дому сему, святой отец! Иду из Чернигова сквозь степи, пою думы о казацкой славе.",
+        choices: [
+            {
+                text: "«Спой нам думу, Тарас, да поведай новости из дальних земель.»",
+                action: (game) => {
+                    audioEngine.playChurchBell(120);
+                    game.addReputation({ peasants: 10, cossacks: 10 });
+                    game.openDialogueText("Кобзарь Тарас берет золотые струны бандуры и запевает старинную думу. Вся весть собралась послушать пение!");
+                }
+            },
+            {
+                text: "«Вот тебе серебряный грош на дорогу.»",
+                action: (game) => {
+                    game.addReputation({ peasants: 5 });
+                    game.openDialogueText("Кобзарь Тарас: «Спаси Бог тебя, батюшка! Буду молиться за твой приход!»");
+                }
+            },
+            {
+                text: "«Доброй дороги, кобзарь.»",
+                action: (game) => game.closeDialogue()
+            }
+        ]
+    },
+
+    traveler_merchant: {
+        npcName: "Купец Фёдор",
+        title: "Заезжий купец из Львова",
+        portrait: "📦",
+        text: "Благословенного дня, батюшка! Привёз восковые львовские свечи, афонский ладан да шелковые рушники.",
+        choices: [
+            {
+                text: "«Купить афонский ладан для храма.»",
+                action: (game) => {
+                    game.addReputation({ church: 15 });
+                    game.openDialogueText("Купец Фёдор отдаёт благовонный ладан. Храм Покрова теперь наполнен святым ароматом!");
+                }
+            },
+            {
+                text: "«Какие вести с львовского ярмарка?»",
+                action: (game) => {
+                    game.openDialogueText("Купец Фёдор: «В городе мир, но шляхта собирает сеймики. Все говорят о вере и унии!»");
+                }
+            },
+            {
+                text: "«Бог в помощь в торговле.»",
+                action: (game) => game.closeDialogue()
+            }
+        ]
+    },
+
+    traveler_pilgrim: {
+        npcName: "Паломник Прохор",
+        title: "Киевский богомолец",
+        portrait: "🦯",
+        text: "Мир храму вашему! Держу путь из Киево-Печерской Лавры по святым местам.",
+        choices: [
+            {
+                text: "«Поделись благословением святых пещер, Прохор.»",
+                action: (game) => {
+                    game.addReputation({ church: 10, peasants: 10 });
+                    game.openDialogueText("Паломник Прохор передаёт засушенную просфору из Киевских пещер. Прихожане с трепетом подходят к святыне.");
+                }
+            },
+            {
+                text: "«Отдохни с дороги в плебании, странник.»",
                 action: (game) => game.closeDialogue()
             }
         ]
