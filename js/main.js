@@ -350,13 +350,13 @@ class Game {
             } else if (obj.id === "pier_boat") {
                 if (!gameWorld.isPlayerInBoat) {
                     gameWorld.isPlayerInBoat = true;
-                    this.player.x = 1430;
+                    this.player.x = 1420;
                     this.player.y = 980;
                     this.player.targetDestination = null;
                     this.addNotification("Вы сели в лодку! Теперь можно плавать по реке на WASD.");
                 } else {
                     gameWorld.isPlayerInBoat = false;
-                    this.player.x = 1335;
+                    this.player.x = 1300;
                     this.player.y = 980;
                     this.player.targetDestination = null;
                     this.addNotification("Вы сошли с лодки на берег.");

@@ -1229,6 +1229,7 @@ class GameRenderer {
                 this.ctx.beginPath(); this.ctx.moveTo(-6, -2); this.ctx.lineTo(0, -15 + Math.random()*5); this.ctx.lineTo(6, -2); this.ctx.fill();
                 break;
             case "pier_boat":
+                if (gameWorld.isPlayerInBoat) break; // Скрываем стоящую лодку, пока игрок плывёт
                 // Лодка
                 this.ctx.fillStyle = "#5c3e21";
                 this.ctx.beginPath();
