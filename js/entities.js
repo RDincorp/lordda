@@ -279,6 +279,7 @@ class NPC {
         this.y = data.y;
         this.homeX = data.x;
         this.homeY = data.y;
+        this.location = data.location || "outdoor"; // "outdoor", "church_interior", "tavern_interior", "manor_interior", "hut_interior_1", "parsonage_interior"
         this.schedule = data.schedule || [];
         this.speechBubble = null; // { text, timer }
         this.animTimer = Math.random();
@@ -337,18 +338,27 @@ class NPC {
             }
         }
 
-        // График распорядка
+        // График распорядка и входа/выхода из зданий
         let scheduled = false;
         for (let item of this.schedule) {
             if (gameHours >= item.startHour && gameHours < item.endHour) {
                 scheduled = true;
-                const dx = item.targetX - this.x;
-                const dy = item.targetY - this.y;
-                const dist = Math.hypot(dx, dy);
+                const targetLoc = item.location || "outdoor";
 
-                if (dist > 5) {
-                    this.x += (dx / dist) * 45 * deltaTime;
-                    this.y += (dy / dist) * 45 * deltaTime;
+                if (this.location !== targetLoc) {
+                    this.location = targetLoc;
+                    this.x = item.targetX;
+                    this.y = item.targetY;
+                    this.wanderTarget = null;
+                } else {
+                    const dx = item.targetX - this.x;
+                    const dy = item.targetY - this.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist > 5) {
+                        this.x += (dx / dist) * 45 * deltaTime;
+                        this.y += (dy / dist) * 45 * deltaTime;
+                    }
                 }
                 break;
             }

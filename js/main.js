@@ -16,9 +16,11 @@ class Game {
                 title: "Шляхтич и меценат",
                 portrait: "👑",
                 x: 1350, y: 430,
+                location: "outdoor",
                 schedule: [
-                    { startHour: 8, endHour: 18, targetX: 1350, targetY: 430 },
-                    { startHour: 18, endHour: 22, targetX: 870, targetY: 710 }
+                    { startHour: 8, endHour: 18, location: "outdoor", targetX: 1350, targetY: 430 },
+                    { startHour: 18, endHour: 22, location: "tavern_interior", targetX: 150, targetY: 260 },
+                    { startHour: 22, endHour: 8, location: "manor_interior", targetX: 300, targetY: 200 }
                 ]
             }),
             new NPC({
@@ -26,28 +28,52 @@ class Game {
                 name: "Янкель-шинкарь",
                 title: "Владелец корчмы",
                 portrait: "🧔",
-                x: 870, y: 710
+                x: 870, y: 710,
+                location: "outdoor",
+                schedule: [
+                    { startHour: 7, endHour: 21, location: "outdoor", targetX: 870, targetY: 710 },
+                    { startHour: 21, endHour: 7, location: "tavern_interior", targetX: 275, targetY: 180 }
+                ]
             }),
             new NPC({
                 id: "cossack_grom",
                 name: "Атаман Гром",
                 title: "Казачий атаман",
                 portrait: "⚔️",
-                x: 1120, y: 920
+                x: 1120, y: 920,
+                location: "outdoor",
+                schedule: [
+                    { startHour: 8, endHour: 19, location: "outdoor", targetX: 1120, targetY: 920 },
+                    { startHour: 19, endHour: 23, location: "tavern_interior", targetX: 180, targetY: 260 },
+                    { startHour: 23, endHour: 8, location: "outdoor", targetX: 1120, targetY: 920 }
+                ]
             }),
             new NPC({
                 id: "hanna",
                 name: "Ганна",
                 title: "Крестьянка",
                 portrait: "👵",
-                x: 480, y: 440
+                x: 480, y: 440,
+                location: "outdoor",
+                schedule: [
+                    { startHour: 7, endHour: 11, location: "church_interior", targetX: 220, targetY: 220 },
+                    { startHour: 11, endHour: 20, location: "outdoor", targetX: 480, targetY: 440 },
+                    { startHour: 20, endHour: 7, location: "hut_interior_1", targetX: 150, targetY: 200 }
+                ]
             }),
             new NPC({
                 id: "diak_bogdan",
                 name: "Дьяк Богдан",
                 title: "Приходской дьяк",
                 portrait: "📖",
-                x: 400, y: 440
+                x: 400, y: 440,
+                location: "outdoor",
+                schedule: [
+                    { startHour: 6, endHour: 12, location: "church_interior", targetX: 300, targetY: 200 },
+                    { startHour: 12, endHour: 17, location: "outdoor", targetX: 400, targetY: 440 },
+                    { startHour: 17, endHour: 20, location: "church_interior", targetX: 300, targetY: 200 },
+                    { startHour: 20, endHour: 6, location: "parsonage_interior", targetX: 200, targetY: 200 }
+                ]
             })
         ];
 
@@ -193,10 +219,15 @@ class Game {
 
         this.player.update(deltaTime, this.keys);
         
+        // Обновляем AI всех жителей
+        for (let npc of this.npcs) {
+            npc.update(deltaTime, timeManager.gameHours, this.npcs);
+        }
+
+        // Фильтруем NPC, находящихся в той же локации, что и игрок
+        const activeNPCs = this.npcs.filter(n => n.location === gameWorld.currentLocation);
+
         if (gameWorld.currentLocation === "outdoor") {
-            for (let npc of this.npcs) {
-                npc.update(deltaTime, timeManager.gameHours, this.npcs);
-            }
             this.dog.update(deltaTime);
             this.birds.update(deltaTime);
 
@@ -217,8 +248,8 @@ class Game {
         }
 
         this.renderer.updateCamera(this.player);
-        this.checkNearbyInteractions();
-        this.renderer.render(this.player, this.npcs);
+        this.checkNearbyInteractions(activeNPCs);
+        this.renderer.render(this.player, activeNPCs);
 
         requestAnimationFrame((time) => this.gameLoop(time));
     }
@@ -244,9 +275,9 @@ class Game {
         if (this.chatterTimer > 6.0) {
             this.chatterTimer = 0;
 
-            const availableNPCs = this.npcs.filter(n => !n.speechBubble);
-            if (availableNPCs.length > 0) {
-                const npc = availableNPCs[Math.floor(Math.random() * availableNPCs.length)];
+            const outdoorNPCs = this.npcs.filter(n => n.location === "outdoor" && !n.speechBubble);
+            if (outdoorNPCs.length > 0) {
+                const npc = outdoorNPCs[Math.floor(Math.random() * outdoorNPCs.length)];
                 const phrases = {
                     pan_janusz: ["Шляхетское слово твердо!", "Где застрял львовский купец?", "Славный храм мы срубили!"],
                     diak_bogdan: ["Господи, помилуй...", "Воду у колодца освятить надо", "Скоро литургия!"],
@@ -265,30 +296,28 @@ class Game {
         }
     }
 
-    checkNearbyInteractions() {
+    checkNearbyInteractions(activeNPCs = []) {
         const promptEl = document.getElementById('interactionPrompt');
         const textEl = document.getElementById('interactionText');
         const badgeEl = document.getElementById('keyBadge');
 
-        if (gameWorld.currentLocation === "outdoor") {
-            let nearestNPC = null;
-            let minDist = 70;
+        let nearestNPC = null;
+        let minDist = 70;
 
-            for (let npc of this.npcs) {
-                const dist = Math.hypot(npc.x - this.player.x, npc.y - this.player.y);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearestNPC = npc;
-                }
+        for (let npc of activeNPCs) {
+            const dist = Math.hypot(npc.x - this.player.x, npc.y - this.player.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestNPC = npc;
             }
+        }
 
-            if (nearestNPC) {
-                this.currentInteractable = { type: 'npc', data: nearestNPC };
-                if (badgeEl) badgeEl.innerText = "E";
-                textEl.innerText = `Поговорить с ${nearestNPC.name}`;
-                promptEl.classList.remove('hidden');
-                return;
-            }
+        if (nearestNPC) {
+            this.currentInteractable = { type: 'npc', data: nearestNPC };
+            if (badgeEl) badgeEl.innerText = "E";
+            textEl.innerText = `Поговорить с ${nearestNPC.name}`;
+            promptEl.classList.remove('hidden');
+            return;
         }
 
         const nearestObj = gameWorld.getNearestInteractable(this.player.x, this.player.y);
