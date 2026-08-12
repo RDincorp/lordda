@@ -31,8 +31,53 @@ class Player {
         } else if (this.targetDestination) {
             const dist = Math.hypot(this.targetDestination.x - this.x, this.targetDestination.y - this.y);
             if (dist > 25) {
-                dx = (this.targetDestination.x - this.x) / dist;
-                dy = (this.targetDestination.y - this.y) / dist;
+                let dirX = (this.targetDestination.x - this.x) / dist;
+                let dirY = (this.targetDestination.y - this.y) / dist;
+
+                const stepX = this.x + dirX * this.speed * deltaTime;
+                const stepY = this.y + dirY * this.speed * deltaTime;
+
+                if (!gameWorld.checkCollision(stepX, stepY, this.radius)) {
+                    dx = dirX;
+                    dy = dirY;
+                } else {
+                    // Умный поиск обхода препятствий (огибание стен, деревьев и воды)
+                    let bestAngle = null;
+                    let bestDist = Infinity;
+                    const directAngle = Math.atan2(dirY, dirX);
+
+                    const anglesToTest = [
+                        0.52, -0.52, // 30 градусов
+                        0.78, -0.78, // 45 градусов
+                        1.05, -1.05, // 60 градусов
+                        1.31, -1.31, // 75 градусов
+                        1.57, -1.57, // 90 градусов
+                        2.09, -2.09  // 120 градусов
+                    ];
+
+                    for (let dAngle of anglesToTest) {
+                        const testAngle = directAngle + dAngle;
+                        const tDx = Math.cos(testAngle);
+                        const tDy = Math.sin(testAngle);
+                        const tX = this.x + tDx * this.speed * deltaTime;
+                        const tY = this.y + tDy * this.speed * deltaTime;
+
+                        if (!gameWorld.checkCollision(tX, tY, this.radius)) {
+                            const dToTarget = Math.hypot(this.targetDestination.x - tX, this.targetDestination.y - tY);
+                            if (dToTarget < bestDist) {
+                                bestDist = dToTarget;
+                                bestAngle = testAngle;
+                            }
+                        }
+                    }
+
+                    if (bestAngle !== null) {
+                        dx = Math.cos(bestAngle);
+                        dy = Math.sin(bestAngle);
+                    } else {
+                        this.targetDestination = null;
+                    }
+                }
             } else {
                 const autoInteract = this.targetDestination.autoInteract;
                 this.targetDestination = null;

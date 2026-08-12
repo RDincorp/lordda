@@ -350,13 +350,15 @@ class Game {
             } else if (obj.id === "pier_boat") {
                 if (!gameWorld.isPlayerInBoat) {
                     gameWorld.isPlayerInBoat = true;
-                    this.player.x = 1480;
-                    this.player.y = 990;
+                    this.player.x = 1430;
+                    this.player.y = 980;
+                    this.player.targetDestination = null;
                     this.addNotification("Вы сели в лодку! Теперь можно плавать по реке на WASD.");
                 } else {
                     gameWorld.isPlayerInBoat = false;
-                    this.player.x = 1390;
-                    this.player.y = 970;
+                    this.player.x = 1335;
+                    this.player.y = 980;
+                    this.player.targetDestination = null;
                     this.addNotification("Вы сошли с лодки на берег.");
                 }
             } else if (obj.id === "parsonage_bed") {

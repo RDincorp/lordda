@@ -177,7 +177,7 @@ class GameWorld {
             { id: "graveyard_cross", name: "Кладбищенский Крест", x: 260, y: 160, radius: 35, icon: "✝️", actionText: "Сотворить молитву у могил", description: "Старинные деревянные кресты приходского кладбища." },
             { id: "market_stall", name: "Ярмарочная лавка", x: 670, y: 450, radius: 40, icon: "🛒", actionText: "Осмотреть ярмарочные товары", description: "Телега с зерном, воском и медовыми сотами." },
             { id: "cossack_fire", name: "Казачий костёр на опушке", x: 1100, y: 900, radius: 50, icon: "🔥", actionText: "Подойти к костру казаков", description: "У костра греются казаки." },
-            { id: "pier_boat", name: "Причальная лодка у реки", x: 1420, y: 980, radius: 40, icon: "🚣", actionText: "Осмотреть лодку", description: "Деревянный челн для переправы через реку." }
+            { id: "pier_boat", name: "Причальная лодка у реки", x: 1355, y: 980, radius: 45, icon: "🚣", actionText: "Осмотреть лодку", description: "Деревянный челн для переправы через реку." }
         ];
 
         // ИСТОЧНИКИ СВЕТА НА УЛИЦЕ
